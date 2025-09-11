@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tetris Puslespil">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <title>Tetris Puslespil</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 16%, #ffeb3b 32%, #66bb6a 48%, #42a5f5 64%, #ab47bc 80%, #ec407a 100%);
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* Touch optimering */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+            overflow-x: hidden;
+            /* Sikrer at spillet altid passer i viewport */
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+        
+        .game-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 100%;
+            max-width: 100vw;
+            margin: 0 auto;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        
+        .game-board {
+            border: 4px solid;
+            border-image: linear-gradient(45deg, #ff6b6b, #ffa726, #ffeb3b, #66bb6a, #42a5f5, #ab47bc, #ec407a) 1;
+            background: linear-gradient(145deg, #fff5f7, #ffeef2);
+            box-shadow: 0 15px 35px rgba(102, 187, 106, 0.3);
+            border-radius: 20px;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0 auto;
+            display: block;
+            /* Responsiv størrelse - mindre og mere tilpasset */
+            width: min(70vw, 350px);
+            height: auto;
+            aspect-ratio: 2/3;
+            max-width: 100%;
+        }
+        
+        .game-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #c2185b; /* Mørk pink i stedet for regnbuefarver */
+            text-shadow: none;
+            /* Centrer over hele spilleområdet */
+            width: 100%;
+            display: block;
+        }
+        
+        .pieces-container {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 6px;
+            min-width: 200px;
+            box-shadow: 0 8px 32px rgba(102, 187, 106, 0.2);
+            position: relative;
+            min-height: 160px;
+            margin-top: 15px;
+            display: block;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .pieces-title {
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 12px; /* Mindre tekst for smallere container */
+            font-weight: 600;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726, #ffeb3b, #66bb6a, #42a5f5, #ab47bc, #ec407a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pieces-area {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            min-height: 120px;
+            width: 100%;
+        }
+        
+        /* Brikker tilpasset horisontal layout */
+        .piece-item {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #ff6b6b, #ffa726, #ffeb3b, #66bb6a, #42a5f5, #ab47bc, #ec407a) 1;
+            border-radius: 8px;
+            padding: 4px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            text-align: center;
+            user-select: none;
+            touch-action: none;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            /* Brikker tilpasset horisontal layout */
+            min-width: 80px;
+            min-height: 80px;
+            -webkit-tap-highlight-color: transparent;
+            /* Tilpasset spacing for horisontal layout */
+            margin: 0;
+            display: inline-block;
+            /* Vigtigt for at rotationsknappen kan positioneres korrekt */
+            position: relative;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        
+        /* Styling for rotationsknapper */
+        .rotate-btn {
+            position: absolute;
+            top: -24px;
+            right: -24px;
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ff6b6b, #ffa726, #ffeb3b, #66bb6a, #42a5f5, #ab47bc, #ec407a);
+            color: white;
+            cursor: pointer;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 100;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        
+        .rotate-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            background: linear-gradient(145deg, #ec407a, #ab47bc, #42a5f5, #66bb6a, #ffeb3b, #ffa726, #ff6b6b);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .rotate-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* iPad hover effekter - brug active state i stedet */
+        .piece-item:active {
+            border-image: linear-gradient(45deg, #ec407a, #ab47bc, #42a5f5, #66bb6a, #ffeb3b, #ffa726, #ff6b6b) 1;
+            transform: translateY(-2px) scale(1.03);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
+            box-shadow: 0 8px 25px rgba(102, 187, 106, 0.2);
+        }
+        
+        /* Fjern hover på iPad */
+        @media (hover: none) and (pointer: coarse) {
+            .piece-item:hover {
+                transform: none;
+                border-image: linear-gradient(45deg, #ff6b6b, #ffa726, #ffeb3b, #66bb6a, #42a5f5, #ab47bc, #ec407a) 1;
+                background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            }
+        }
+        
+        .preview-info {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.3;
+            padding: 0 5px;
+        }
+        
+        /* Tilføj nogle regnbue ikoner */
+        .game-title::before {
+            content: '🌈 ';
+            margin-right: 10px;
+        }
+        
+        .game-title::after {
+            content: ' 🌈';
+            margin-left: 10px;
+        }
+        
+        .pieces-title::before {
+            content: '✨ ';
+            margin-right: 8px;
+        }
+        
+        .preview-info::before {
+            content: '💫 ';
+            margin-right: 8px;
+        }
+
+        /* Meget små skærme */
+        @media (max-width: 320px) {
+            body {
+                padding: 2px;
+            }
+            
+            .game-container {
+                gap: 5px;
+                padding: 0 2px;
+            }
+            
+            .game-title {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .game-board {
+                width: 85vw;
+                max-width: 250px;
+                aspect-ratio: 2/3;
+            }
+            
+            .pieces-container {
+                min-width: 200px;
+                min-height: 80px;
+                padding: 3px;
+                margin-top: 5px;
+            }
+            
+            .piece-item {
+                min-width: 50px;
+                min-height: 50px;
+            }
+            
+            .rotate-btn {
+                width: 36px;
+                height: 36px;
+                top: -12px;
+                right: -12px;
+                font-size: 20px;
+            }
+        }
+
+        /* Mobile telefoner (portrait) */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .game-container {
+                gap: 8px;
+                padding: 0 5px;
+            }
+            
+            .game-title {
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+            
+            .game-board {
+                width: 80vw;
+                max-width: 280px;
+                aspect-ratio: 2/3;
+            }
+            
+            .pieces-container {
+                min-width: 240px;
+                min-height: 100px;
+                padding: 4px;
+                margin-top: 8px;
+            }
+            
+            .pieces-title {
+                font-size: 12px;
+            }
+            
+            .piece-item {
+                min-width: 60px;
+                min-height: 60px;
+            }
+            
+            .rotate-btn {
+                width: 40px;
+                height: 40px;
+                top: -16px;
+                right: -16px;
+                font-size: 24px;
+            }
+            
+            .preview-info {
+                font-size: 9px;
+                padding: 0 3px;
+            }
+        }
+        
+        /* Mobile telefoner (landscape) */
+        @media (max-width: 896px) and (orientation: landscape) {
+            .game-container {
+                flex-direction: column;
+                gap: 8px;
+                max-width: 100vw;
+                padding: 0 5px;
+            }
+            
+            .game-board {
+                width: min(50vw, 220px);
+                max-width: 220px;
+                aspect-ratio: 2/3;
+            }
+            
+            .pieces-container {
+                min-width: 180px;
+                min-height: 100px;
+                margin-top: 5px;
+            }
+            
+            .pieces-area {
+                flex-direction: row;
+                gap: 8px;
+            }
+            
+            .game-title {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .piece-item {
+                min-width: 56px;
+                min-height: 56px;
+            }
+        }
+        
+        /* Tablets (portrait) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .game-title {
+                font-size: 22px;
+                margin-bottom: 15px;
+            }
+            
+            .game-board {
+                width: min(65vw, 320px);
+                aspect-ratio: 2/3;
+            }
+            
+            .pieces-container {
+                min-width: 220px;
+                min-height: 120px;
+                margin-top: 10px;
+            }
+            
+            .piece-item {
+                min-width: 80px;
+                min-height: 80px;
+            }
+            
+            .rotate-btn {
+                width: 48px;
+                height: 48px;
+                top: -20px;
+                right: -20px;
+                font-size: 28px;
+            }
+        }
+        
+        /* Tablets (landscape) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .game-container {
+                flex-direction: column;
+                gap: 15px;
+                max-width: 90vw;
+            }
+            
+            .game-board {
+                width: min(50vw, 340px);
+                aspect-ratio: 2/3;
+            }
+            
+            .pieces-container {
+                min-width: 200px;
+                min-height: 120px;
+                margin-top: 10px;
+            }
+            
+            .piece-item {
+                min-width: 84px;
+                min-height: 84px;
+            }
+        }
+        
+        /* Desktop */
+        @media (min-width: 1025px) {
+            .game-container {
+                flex-direction: column;
+                gap: 20px;
+                max-width: 1200px;
+            }
+            
+            .game-board {
+                width: min(45vw, 380px);
+                aspect-ratio: 2/3;
+                max-width: 380px;
+            }
+            
+            .pieces-container {
+                min-width: 220px;
+                min-height: 140px;
+                margin-top: 15px;
+            }
+            
+            .piece-item {
+                min-width: 90px;
+                min-height: 90px;
+            }
+        }
+        
+        /* iPad touch optimering */
+        @media (hover: none) and (pointer: coarse) {
+            .piece-item {
+                cursor: default;
+            }
+            
+            .rotate-btn {
+                cursor: default;
+            }
+            
+            /* Forbedret touch targets */
+            .piece-item {
+                min-width: 100px;
+                min-height: 100px;
+            }
+            
+            .rotate-btn {
+                width: 72px;
+                height: 72px;
+                top: -32px;
+                right: -32px;
+                font-size: 36px;
+                z-index: 100;
+                transform: translateZ(0);
+                will-change: transform;
+            }
+        }
+        
+        /* Forhindre tekst markering på iPad */
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Forbedret touch feedback */
+        .piece-item:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+        
+        .rotate-btn:active {
+            transform: scale(0.9);
+            transition: transform 0.1s ease;
+        }
+        
+    </style>
+</head>
+<body>
+    <div style="text-align: center; width: 100%;">
+        <div class="game-title">Evighedstetris</div>
+        
+        <div class="game-container">
+            <canvas id="gameCanvas" class="game-board" width="600" height="1200"></canvas>
+            
+            <div class="pieces-container">
+                <div class="pieces-title">Brikker</div>
+                <div class="pieces-area" id="piecesArea">
+                    <!-- Brikkerne vil blive indsat her via JavaScript -->
+                </div>
+                <div class="preview-info">
+                    Træk brikkerne ind i spillebrættet. Grøn = kan placeres, Rød = kan ikke placeres. Klik 🔄 for at rotere.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('HTML loaded, starting script...');
+    </script>
+    <script src="tetris.js"></script>
+    <script>
+        console.log('Script tag loaded');
+    </script>
+</body>
+</html>
